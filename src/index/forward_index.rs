@@ -130,17 +130,21 @@ pub fn block_score(
     use std::arch::x86_64::*;
     assert!(bsize == 16);
 
-    let mut doc_scores = vec![0i32; bsize];
-
     unsafe {
+        // In-register accumulator: 16 lanes of i32, one per doc id 0..15
+        let mut acc: __m512i = _mm512_setzero_si512();
+        // Lane indices [0..15]
+        let idx: __m512i = _mm512_set_epi32(
+            15, 14, 13, 12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1, 0,
+        );
+
         let mut term_ptr = document.as_ptr();
         let end = term_ptr.wrapping_offset(document.len() as isize);
-        
+
         for &(coordinate, value) in query {
             while term_ptr != end && (*term_ptr).0 < coordinate {
                 term_ptr = term_ptr.add(1);
             }
-
             if term_ptr == end {
                 break;
             }
@@ -150,43 +154,54 @@ pub fn block_score(
                 let scores = &(*term_ptr).1.1;
                 let len = doc_ids.len();
 
-                let docs_ptr = (*term_ptr).1.0.as_ptr();
-                let scores_ptr = (*term_ptr).1.1.as_ptr();
+                // Active lanes mask (lowest len bits)
+                let k_mask: __mmask16 = if len >= 16 { 0xFFFF } else { ((1u32 << len) - 1) as __mmask16 };
 
-                // Load doc_ids and scores as u8 vectors
-                let docs = _mm_loadu_si128(docs_ptr as *const __m128i);
-                let docs_i32 = _mm512_cvtepu8_epi32(docs);
+                // Masked 16B loads of u8 doc_ids and scores (inactive lanes = 0)
+                let docs128: __m128i = _mm_maskz_loadu_epi8(k_mask, doc_ids.as_ptr() as *const _);
+                let sc128: __m128i = _mm_maskz_loadu_epi8(k_mask, scores.as_ptr() as *const _);
 
-                // packed u8 scores in the same order as docs
-                let scores_v = _mm_loadu_si128(scores_ptr as *const __m128i);
+                // Widen u8 -> i32 (16 lanes)
+                let docs_i32: __m512i = _mm512_cvtepu8_epi32(docs128);
+                let sc_i32: __m512i = _mm512_cvtepu8_epi32(sc128);
 
-                // packed u8 scores to packed i32
-                let scores_i32 = _mm512_cvtepu8_epi32(scores_v);
+                // Broadcast query weight and precompute contributions per posting lane
+                let qv: __m512i = _mm512_set1_epi32(value as i32);
+                let contrib: __m512i = _mm512_mullo_epi32(sc_i32, qv);
 
-                // Broadcast the query value
-                let query_value = _mm512_set1_epi32(value as i32);
+                // For each active posting lane j, add contrib to lane == doc_id[j]
+                // This keeps accumulation entirely in registers.
+                let mut j = 0usize;
+                while j < len {
+                    // Extract doc id and contrib for lane j
+                    // Extract 32-bit lane j from docs_i32 and contrib using 128-bit chunks
+                    let chunk = (j >> 2) & 0x3; // 0..3 which 128-bit in 512
+                    let lane_in_chunk = (j & 3) as i32; // 0..3 dwords per 128
 
-                // Multiply the scores by the query value
-                let term_scores = _mm512_mullo_epi32(scores_i32, query_value);
+                    let docs_chunk: __m128i = _mm512_extracti32x4_epi32(docs_i32, chunk as i32);
+                    let sc_chunk: __m128i = _mm512_extracti32x4_epi32(contrib, chunk as i32);
 
-                // Gather previous doc_scores at doc_ids
-                let prev_scores_at_docs = _mm512_i32gather_epi32(docs_i32, doc_scores.as_ptr() as *const i32, 4);
+                    let doc_id_j: i32 = _mm_extract_epi32(docs_chunk, lane_in_chunk);
+                    let val_j: i32 = _mm_extract_epi32(sc_chunk, lane_in_chunk);
 
-                // Add the term scores to the previous doc scores
-                let new_scores = _mm512_add_epi32(prev_scores_at_docs, term_scores);
+                    // Build mask for lane == doc_id_j
+                    let doc_bcast: __m512i = _mm512_set1_epi32(doc_id_j);
+                    let m: __mmask16 = _mm512_cmpeq_epi32_mask(idx, doc_bcast);
 
-                // Scatter the new scores back to the doc_scores at corresponding positions
-                let scores_mask = ((1u16 << len) - 1) as __mmask16;
-                _mm512_mask_i32scatter_epi32(doc_scores.as_mut_ptr() as *mut i32, scores_mask, docs_i32, new_scores, 4);
+                    // Accumulate
+                    let val_bcast: __m512i = _mm512_set1_epi32(val_j);
+                    acc = _mm512_mask_add_epi32(acc, m, acc, val_bcast);
+
+                    j += 1;
+                }
             }
         }
-    }
 
-    // Convert i32 scores to u16, saturating at u16::MAX
-    doc_scores
-        .into_iter()
-        .map(|x| x as u16)
-        .collect()
+        // Store accumulator and convert to u16
+        let mut out = vec![0i32; 16];
+        _mm512_storeu_si512(out.as_mut_ptr() as *mut __m512i, acc);
+        out.into_iter().map(|x| x as u16).collect()
+    }
 }
 
 #[cfg(not(all(target_feature = "avx512f", target_feature = "avx512bw")))]
