@@ -73,11 +73,9 @@ pub fn fwd2bfwd(fwd: &ForwardIndex, block_size: usize) -> BlockForwardIndex {
     progress.set_style(pb_style());
     progress.set_draw_delta((blocks.len() / 100) as u64);
 
-    BlockForwardIndex {block_size: block_size, data:
-
-
-    // Step 2: For each block, aggregate term-score pairs
-    blocks
+    BlockForwardIndex {
+        block_size: block_size,
+        data: blocks
         .map(|block| {
 
             let mut term_pairs: Vec<(u32, u32, u32)> = block.iter().enumerate().flat_map(|(idx, doc)| {
