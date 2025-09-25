@@ -171,29 +171,29 @@ pub fn block_score(
 
                 // For each active posting lane j, add contrib to lane == doc_id[j]
                 // This keeps accumulation entirely in registers.
-                let mut j = 0usize;
-                while j < len {
-                    // Extract doc id and contrib for lane j
-                    // Extract 32-bit lane j from docs_i32 and contrib using 128-bit chunks
-                    let chunk = (j >> 2) & 0x3; // 0..3 which 128-bit in 512
-                    let lane_in_chunk = (j & 3) as i32; // 0..3 dwords per 128
+                // let mut j = 0usize;
+                // while j < len {
+                //     // Extract doc id and contrib for lane j
+                //     // Extract 32-bit lane j from docs_i32 and contrib using 128-bit chunks
+                //     let chunk = (j >> 2) & 0x3; // 0..3 which 128-bit in 512
+                //     let lane_in_chunk = (j & 3) as i32; // 0..3 dwords per 128
 
-                    let docs_chunk: __m128i = _mm512_extracti32x4_epi32(docs_i32, chunk as i32);
-                    let sc_chunk: __m128i = _mm512_extracti32x4_epi32(contrib, chunk as i32);
+                //     let docs_chunk: __m128i = _mm512_extracti32x4_epi32(docs_i32, chunk as i32);
+                //     let sc_chunk: __m128i = _mm512_extracti32x4_epi32(contrib, chunk as i32);
 
-                    let doc_id_j: i32 = _mm_extract_epi32(docs_chunk, lane_in_chunk);
-                    let val_j: i32 = _mm_extract_epi32(sc_chunk, lane_in_chunk);
+                //     let doc_id_j: i32 = _mm_extract_epi32(docs_chunk, lane_in_chunk);
+                //     let val_j: i32 = _mm_extract_epi32(sc_chunk, lane_in_chunk);
 
-                    // Build mask for lane == doc_id_j
-                    let doc_bcast: __m512i = _mm512_set1_epi32(doc_id_j);
-                    let m: __mmask16 = _mm512_cmpeq_epi32_mask(idx, doc_bcast);
+                //     // Build mask for lane == doc_id_j
+                //     let doc_bcast: __m512i = _mm512_set1_epi32(doc_id_j);
+                //     let m: __mmask16 = _mm512_cmpeq_epi32_mask(idx, doc_bcast);
 
-                    // Accumulate
-                    let val_bcast: __m512i = _mm512_set1_epi32(val_j);
-                    acc = _mm512_mask_add_epi32(acc, m, acc, val_bcast);
+                //     // Accumulate
+                //     let val_bcast: __m512i = _mm512_set1_epi32(val_j);
+                //     acc = _mm512_mask_add_epi32(acc, m, acc, val_bcast);
 
-                    j += 1;
-                }
+                //     j += 1;
+                // }
             }
         }
 
