@@ -5,6 +5,7 @@ use bmp::search::b_search;
 use bmp::util::to_trec;
 use std::path::PathBuf;
 use structopt::StructOpt;
+use bmp::index::forward_index::Postings;
 
 // Function to perform the search for each query and return the results
 
@@ -34,6 +35,18 @@ fn main() -> Result<()> {
     // 1. Load the index
     eprintln!("Loading the index");
     let (index, bfwd) = bmp::index::from_file(args.index)?;
+
+    let mut num_sparse = 0;
+    let mut num_dense = 0;
+    for (_, block) in bfwd.data.iter().enumerate() {
+        for (_, v) in block.iter() {
+            match v {
+                Postings::Sparse(p) => num_sparse += 1,
+                Postings::Dense(d) => num_dense += 1,
+            }
+        }
+    }
+    eprintln!("num_sparse: {}, num_dense: {}", num_sparse, num_dense);
 
     // 2. Load the queries
     eprintln!("Loading the queries");
