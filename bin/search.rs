@@ -35,6 +35,18 @@ fn main() -> Result<()> {
     eprintln!("Loading the index");
     let (index, bfwd) = bmp::index::from_file(args.index)?;
 
+    let mut num_sparse = 0;
+    let mut num_dense = 0;
+    for (_, block) in bfwd.data.iter().enumerate() {
+        for (_, v) in block.iter() {
+            match v {
+                crate::index::forward_index::Postings::Sparse(p) => num_sparse += 1,
+                crate::index::forward_index::Postings::Dense(d) => num_dense += 1,
+            }
+        }
+    }
+    eprintln!("num_sparse: {}, num_dense: {}", num_sparse, num_dense);
+
     // 2. Load the queries
     eprintln!("Loading the queries");
     let (q_ids, cursors) = cursors_from_queries(args.queries, &index);
