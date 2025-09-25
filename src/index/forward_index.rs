@@ -321,7 +321,7 @@ pub fn block_score(
             //             acc = _mm512_mask_add_epi32(acc, m_15, acc, val_bcast_15);
             //         }
             //     }
-            // }
+            }
         }
 
         // Store accumulator and convert to u16
