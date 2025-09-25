@@ -5,6 +5,7 @@ use bmp::search::b_search;
 use bmp::util::to_trec;
 use std::path::PathBuf;
 use structopt::StructOpt;
+use bmp::index::forward_index::Postings;
 
 // Function to perform the search for each query and return the results
 
@@ -40,8 +41,8 @@ fn main() -> Result<()> {
     for (_, block) in bfwd.data.iter().enumerate() {
         for (_, v) in block.iter() {
             match v {
-                crate::index::forward_index::Postings::Sparse(p) => num_sparse += 1,
-                crate::index::forward_index::Postings::Dense(d) => num_dense += 1,
+                Postings::Sparse(p) => num_sparse += 1,
+                Postings::Dense(d) => num_dense += 1,
             }
         }
     }
