@@ -171,28 +171,157 @@ pub fn block_score(
 
                 // For each active posting lane j, add contrib to lane == doc_id[j]
                 // This keeps accumulation entirely in registers.
-                let mut j = 0usize;
-                while j < len {
-                    // Extract doc id and contrib for lane j
-                    // Extract 32-bit lane j from docs_i32 and contrib using 128-bit chunks
-                    let chunk = (j >> 2) & 0x3; // 0..3 which 128-bit in 512
-                    let lane_in_chunk = (j & 3) as i32; // 0..3 dwords per 128
-
-                    let docs_chunk: __m128i = _mm512_extracti32x4_epi32(docs_i32, chunk as i32);
-                    let sc_chunk: __m128i = _mm512_extracti32x4_epi32(contrib, chunk as i32);
-
-                    let doc_id_j: i32 = _mm_extract_epi32(docs_chunk, lane_in_chunk);
-                    let val_j: i32 = _mm_extract_epi32(sc_chunk, lane_in_chunk);
-
-                    // Build mask for lane == doc_id_j
-                    let doc_bcast: __m512i = _mm512_set1_epi32(doc_id_j);
-                    let m: __mmask16 = _mm512_cmpeq_epi32_mask(idx, doc_bcast);
-
-                    // Accumulate
-                    let val_bcast: __m512i = _mm512_set1_epi32(val_j);
-                    acc = _mm512_mask_add_epi32(acc, m, acc, val_bcast);
-
-                    j += 1;
+                // Unroll the loop to avoid using variables in intrinsic function calls
+                if len > 0 {
+                    let docs_chunk_0: __m128i = _mm512_extracti32x4_epi32(docs_i32, 0);
+                    let sc_chunk_0: __m128i = _mm512_extracti32x4_epi32(contrib, 0);
+                    
+                    if len > 0 {
+                        let doc_id_0: i32 = _mm_extract_epi32(docs_chunk_0, 0);
+                        let val_0: i32 = _mm_extract_epi32(sc_chunk_0, 0);
+                        let doc_bcast_0: __m512i = _mm512_set1_epi32(doc_id_0);
+                        let m_0: __mmask16 = _mm512_cmpeq_epi32_mask(idx, doc_bcast_0);
+                        let val_bcast_0: __m512i = _mm512_set1_epi32(val_0);
+                        acc = _mm512_mask_add_epi32(acc, m_0, acc, val_bcast_0);
+                    }
+                    if len > 1 {
+                        let doc_id_1: i32 = _mm_extract_epi32(docs_chunk_0, 1);
+                        let val_1: i32 = _mm_extract_epi32(sc_chunk_0, 1);
+                        let doc_bcast_1: __m512i = _mm512_set1_epi32(doc_id_1);
+                        let m_1: __mmask16 = _mm512_cmpeq_epi32_mask(idx, doc_bcast_1);
+                        let val_bcast_1: __m512i = _mm512_set1_epi32(val_1);
+                        acc = _mm512_mask_add_epi32(acc, m_1, acc, val_bcast_1);
+                    }
+                    if len > 2 {
+                        let doc_id_2: i32 = _mm_extract_epi32(docs_chunk_0, 2);
+                        let val_2: i32 = _mm_extract_epi32(sc_chunk_0, 2);
+                        let doc_bcast_2: __m512i = _mm512_set1_epi32(doc_id_2);
+                        let m_2: __mmask16 = _mm512_cmpeq_epi32_mask(idx, doc_bcast_2);
+                        let val_bcast_2: __m512i = _mm512_set1_epi32(val_2);
+                        acc = _mm512_mask_add_epi32(acc, m_2, acc, val_bcast_2);
+                    }
+                    if len > 3 {
+                        let doc_id_3: i32 = _mm_extract_epi32(docs_chunk_0, 3);
+                        let val_3: i32 = _mm_extract_epi32(sc_chunk_0, 3);
+                        let doc_bcast_3: __m512i = _mm512_set1_epi32(doc_id_3);
+                        let m_3: __mmask16 = _mm512_cmpeq_epi32_mask(idx, doc_bcast_3);
+                        let val_bcast_3: __m512i = _mm512_set1_epi32(val_3);
+                        acc = _mm512_mask_add_epi32(acc, m_3, acc, val_bcast_3);
+                    }
+                }
+                
+                if len > 4 {
+                    let docs_chunk_1: __m128i = _mm512_extracti32x4_epi32(docs_i32, 1);
+                    let sc_chunk_1: __m128i = _mm512_extracti32x4_epi32(contrib, 1);
+                    
+                    if len > 4 {
+                        let doc_id_4: i32 = _mm_extract_epi32(docs_chunk_1, 0);
+                        let val_4: i32 = _mm_extract_epi32(sc_chunk_1, 0);
+                        let doc_bcast_4: __m512i = _mm512_set1_epi32(doc_id_4);
+                        let m_4: __mmask16 = _mm512_cmpeq_epi32_mask(idx, doc_bcast_4);
+                        let val_bcast_4: __m512i = _mm512_set1_epi32(val_4);
+                        acc = _mm512_mask_add_epi32(acc, m_4, acc, val_bcast_4);
+                    }
+                    if len > 5 {
+                        let doc_id_5: i32 = _mm_extract_epi32(docs_chunk_1, 1);
+                        let val_5: i32 = _mm_extract_epi32(sc_chunk_1, 1);
+                        let doc_bcast_5: __m512i = _mm512_set1_epi32(doc_id_5);
+                        let m_5: __mmask16 = _mm512_cmpeq_epi32_mask(idx, doc_bcast_5);
+                        let val_bcast_5: __m512i = _mm512_set1_epi32(val_5);
+                        acc = _mm512_mask_add_epi32(acc, m_5, acc, val_bcast_5);
+                    }
+                    if len > 6 {
+                        let doc_id_6: i32 = _mm_extract_epi32(docs_chunk_1, 2);
+                        let val_6: i32 = _mm_extract_epi32(sc_chunk_1, 2);
+                        let doc_bcast_6: __m512i = _mm512_set1_epi32(doc_id_6);
+                        let m_6: __mmask16 = _mm512_cmpeq_epi32_mask(idx, doc_bcast_6);
+                        let val_bcast_6: __m512i = _mm512_set1_epi32(val_6);
+                        acc = _mm512_mask_add_epi32(acc, m_6, acc, val_bcast_6);
+                    }
+                    if len > 7 {
+                        let doc_id_7: i32 = _mm_extract_epi32(docs_chunk_1, 3);
+                        let val_7: i32 = _mm_extract_epi32(sc_chunk_1, 3);
+                        let doc_bcast_7: __m512i = _mm512_set1_epi32(doc_id_7);
+                        let m_7: __mmask16 = _mm512_cmpeq_epi32_mask(idx, doc_bcast_7);
+                        let val_bcast_7: __m512i = _mm512_set1_epi32(val_7);
+                        acc = _mm512_mask_add_epi32(acc, m_7, acc, val_bcast_7);
+                    }
+                }
+                
+                if len > 8 {
+                    let docs_chunk_2: __m128i = _mm512_extracti32x4_epi32(docs_i32, 2);
+                    let sc_chunk_2: __m128i = _mm512_extracti32x4_epi32(contrib, 2);
+                    
+                    if len > 8 {
+                        let doc_id_8: i32 = _mm_extract_epi32(docs_chunk_2, 0);
+                        let val_8: i32 = _mm_extract_epi32(sc_chunk_2, 0);
+                        let doc_bcast_8: __m512i = _mm512_set1_epi32(doc_id_8);
+                        let m_8: __mmask16 = _mm512_cmpeq_epi32_mask(idx, doc_bcast_8);
+                        let val_bcast_8: __m512i = _mm512_set1_epi32(val_8);
+                        acc = _mm512_mask_add_epi32(acc, m_8, acc, val_bcast_8);
+                    }
+                    if len > 9 {
+                        let doc_id_9: i32 = _mm_extract_epi32(docs_chunk_2, 1);
+                        let val_9: i32 = _mm_extract_epi32(sc_chunk_2, 1);
+                        let doc_bcast_9: __m512i = _mm512_set1_epi32(doc_id_9);
+                        let m_9: __mmask16 = _mm512_cmpeq_epi32_mask(idx, doc_bcast_9);
+                        let val_bcast_9: __m512i = _mm512_set1_epi32(val_9);
+                        acc = _mm512_mask_add_epi32(acc, m_9, acc, val_bcast_9);
+                    }
+                    if len > 10 {
+                        let doc_id_10: i32 = _mm_extract_epi32(docs_chunk_2, 2);
+                        let val_10: i32 = _mm_extract_epi32(sc_chunk_2, 2);
+                        let doc_bcast_10: __m512i = _mm512_set1_epi32(doc_id_10);
+                        let m_10: __mmask16 = _mm512_cmpeq_epi32_mask(idx, doc_bcast_10);
+                        let val_bcast_10: __m512i = _mm512_set1_epi32(val_10);
+                        acc = _mm512_mask_add_epi32(acc, m_10, acc, val_bcast_10);
+                    }
+                    if len > 11 {
+                        let doc_id_11: i32 = _mm_extract_epi32(docs_chunk_2, 3);
+                        let val_11: i32 = _mm_extract_epi32(sc_chunk_2, 3);
+                        let doc_bcast_11: __m512i = _mm512_set1_epi32(doc_id_11);
+                        let m_11: __mmask16 = _mm512_cmpeq_epi32_mask(idx, doc_bcast_11);
+                        let val_bcast_11: __m512i = _mm512_set1_epi32(val_11);
+                        acc = _mm512_mask_add_epi32(acc, m_11, acc, val_bcast_11);
+                    }
+                }
+                
+                if len > 12 {
+                    let docs_chunk_3: __m128i = _mm512_extracti32x4_epi32(docs_i32, 3);
+                    let sc_chunk_3: __m128i = _mm512_extracti32x4_epi32(contrib, 3);
+                    
+                    if len > 12 {
+                        let doc_id_12: i32 = _mm_extract_epi32(docs_chunk_3, 0);
+                        let val_12: i32 = _mm_extract_epi32(sc_chunk_3, 0);
+                        let doc_bcast_12: __m512i = _mm512_set1_epi32(doc_id_12);
+                        let m_12: __mmask16 = _mm512_cmpeq_epi32_mask(idx, doc_bcast_12);
+                        let val_bcast_12: __m512i = _mm512_set1_epi32(val_12);
+                        acc = _mm512_mask_add_epi32(acc, m_12, acc, val_bcast_12);
+                    }
+                    if len > 13 {
+                        let doc_id_13: i32 = _mm_extract_epi32(docs_chunk_3, 1);
+                        let val_13: i32 = _mm_extract_epi32(sc_chunk_3, 1);
+                        let doc_bcast_13: __m512i = _mm512_set1_epi32(doc_id_13);
+                        let m_13: __mmask16 = _mm512_cmpeq_epi32_mask(idx, doc_bcast_13);
+                        let val_bcast_13: __m512i = _mm512_set1_epi32(val_13);
+                        acc = _mm512_mask_add_epi32(acc, m_13, acc, val_bcast_13);
+                    }
+                    if len > 14 {
+                        let doc_id_14: i32 = _mm_extract_epi32(docs_chunk_3, 2);
+                        let val_14: i32 = _mm_extract_epi32(sc_chunk_3, 2);
+                        let doc_bcast_14: __m512i = _mm512_set1_epi32(doc_id_14);
+                        let m_14: __mmask16 = _mm512_cmpeq_epi32_mask(idx, doc_bcast_14);
+                        let val_bcast_14: __m512i = _mm512_set1_epi32(val_14);
+                        acc = _mm512_mask_add_epi32(acc, m_14, acc, val_bcast_14);
+                    }
+                    if len > 15 {
+                        let doc_id_15: i32 = _mm_extract_epi32(docs_chunk_3, 3);
+                        let val_15: i32 = _mm_extract_epi32(sc_chunk_3, 3);
+                        let doc_bcast_15: __m512i = _mm512_set1_epi32(doc_id_15);
+                        let m_15: __mmask16 = _mm512_cmpeq_epi32_mask(idx, doc_bcast_15);
+                        let val_bcast_15: __m512i = _mm512_set1_epi32(val_15);
+                        acc = _mm512_mask_add_epi32(acc, m_15, acc, val_bcast_15);
+                    }
                 }
             }
         }
