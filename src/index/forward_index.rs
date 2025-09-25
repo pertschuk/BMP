@@ -82,6 +82,9 @@ pub fn fwd2bfwd_with_dense_ratio(fwd: &ForwardIndex, block_size: usize, dense_ra
     // Clamp ratio between 0.0 and 1.0
     let dense_ratio = dense_ratio.clamp(0.0, 1.0);
 
+    let mut num_dense = 0;
+    let mut total_terms = 0;
+
     // Step 2: For each block, aggregate term-score pairs
     let data = blocks
         .map(|block| {
@@ -127,16 +130,19 @@ pub fn fwd2bfwd_with_dense_ratio(fwd: &ForwardIndex, block_size: usize, dense_ra
                     for (doc_id, score) in pairs.into_iter() {
                         dense[doc_id as usize] = score;
                     }
+                    num_dense += 1;
                     out.push((term, Postings::Dense(dense)));
                 } else {
                     out.push((term, Postings::Sparse(pairs)));
                 }
+                total_terms += 1;
             }
 
             out
         })
         .collect();
-
+    let dense_ratio = num_dense as f32 / total_terms as f32;
+    eprintln!("num_dense: {}, dense_ratio: {}", num_dense, dense_ratio);
     BlockForwardIndex { block_size, data }
 }
 
