@@ -142,7 +142,7 @@ pub fn fwd2bfwd_with_dense_ratio(fwd: &ForwardIndex, block_size: usize, dense_ra
 
 pub fn fwd2bfwd(fwd: &ForwardIndex, block_size: usize) -> BlockForwardIndex {
     // default: dense if more than half of docs are present
-    fwd2bfwd_with_dense_ratio(fwd, block_size, 0.5)
+    fwd2bfwd_with_dense_ratio(fwd, block_size, 0.25)
 }
 
 #[cfg(not(all(target_arch = "x86_64", feature = "avx512f", feature = "avx512bw")))]
