@@ -3,7 +3,7 @@ use rand::prelude::*;
 use rand::seq::SliceRandom;
 
 // Import the block_score function from the library
-use bmp::index::forward_index::block_score;
+use bmp::index::forward_index::{block_score, block_score_scalar};
 
 /// Generate realistic test data for benchmarking
 struct TestData {
@@ -93,6 +93,20 @@ fn benchmark_block_score_varying_block_sizes(c: &mut Criterion) {
             |b, data| {
                 b.iter(|| {
                     block_score(
+                        black_box(&data.query),
+                        black_box(&data.document),
+                        black_box(data.block_size),
+                    )
+                })
+            },
+        );
+
+        group.bench_with_input(
+            BenchmarkId::new("balanced_scalar", block_size),
+            &test_data,
+            |b, data| {
+                b.iter(|| {
+                    block_score_scalar(
                         black_box(&data.query),
                         black_box(&data.document),
                         black_box(data.block_size),
