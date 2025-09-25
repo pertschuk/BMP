@@ -141,6 +141,20 @@ fn benchmark_block_score_varying_query_lengths(c: &mut Criterion) {
                 })
             },
         );
+
+        group.bench_with_input(
+            BenchmarkId::new("balanced_scalar", query_length),
+            &test_data,
+            |b, data| {
+                b.iter(|| {
+                    block_score_scalar(
+                        black_box(&data.query),
+                        black_box(&data.document),
+                        black_box(data.block_size),
+                    )
+                })
+            },
+        );
     }
     group.finish();
 }
